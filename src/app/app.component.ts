@@ -22,7 +22,7 @@ const UNASSIGNED_MAP_ID = 0;
 })
 
 export class AppComponent {
-    
+
     title = 'Valorant BO3 Map Veto';
 
     teamAName = TEAM_A_NAME;
@@ -33,10 +33,11 @@ export class AppComponent {
     match?: MatchState;
 
     myMatchId = '';           // text box for users joining specific match and team
-    myTeamIndex: number | null = null;  
+    myTeamIndex: number | null = null;
+    role: 'captain' | 'spectator' | null = null;
+    captainToken: string | null = null;
 
-
-    selectedTeamIndex = TEAM_A_INDEX;          
+    selectedTeamIndex = TEAM_A_INDEX;
     selectedAction: 'ban' | 'pick' = 'ban';
 
     loading = false;
@@ -63,8 +64,8 @@ export class AppComponent {
                 next: resp => {
                     console.log('Create match result:', resp);
                     this.matchId = resp.matchId;
-                    this.loading = false;          
-                    this.loadState();              
+                    this.loading = false;
+                    this.loadState();
                 },
                 error: err => {
                     console.error('Create match error:', err);
@@ -80,10 +81,31 @@ export class AppComponent {
             this.errorMessage = 'Enter a match ID to join.';
             return;
         }
-        if (this.myTeamIndex === null) {
-            this.errorMessage = 'Select a team index (0 or 1).';
-            return;
-        }
+        const teamParam: '0' | '1' | 'spectator' = this.myTeamIndex === null ? 'spectator' :
+            (this.myTeamIndex === TEAM_A_INDEX ? '0' : '1');
+
+        this.matchService.joinMatch(this.myMatchId, teamParam, this.captainToken ?? undefined)
+            .subscribe({
+                next: resp => {
+                    this.matchId = resp.matchId;
+                    this.role = resp.role;
+
+                    if (resp.role === 'captain' && resp.token) {
+                        this.captainToken = resp.token;
+                        if (typeof resp.team === 'number') {
+                            this.myTeamIndex = resp.team;
+                        }
+
+                    } else {
+                        this.myTeamIndex = null; // spectator, clear captain info
+                    }
+                    this.loadState();   // fetch current state from server
+                },
+                error: err => {
+                    console.error('Join match error:', err);
+                    this.errorMessage = 'Failed to join match';
+                }
+            });
 
         this.matchId = this.myMatchId;
         this.loadState();   // fetch current state from server
