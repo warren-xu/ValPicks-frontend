@@ -30,8 +30,8 @@ export class MatchService {
     return this.http.get<{ matchId: string; role: 'captain' | 'spectator'; team?: number; token?: string }>(url);
   }
 
-  applyAction(matchId: string, teamIndex: number, action: 'ban' | 'pick', mapId: number): Observable<MatchState> {
-    const url = `${this.baseUrl}/match/action?id=${encodeURIComponent(matchId)}&team=${teamIndex}&action=${action}&map=${mapId}`;
+  applyAction(matchId: string, teamIndex: number, action: 'ban' | 'pick', mapId: number, token: string): Observable<MatchState> {
+    const url = `${this.baseUrl}/match/action?id=${encodeURIComponent(matchId)}&team=${teamIndex}&action=${action}&map=${mapId}&token=${encodeURIComponent(token)}`;
     return this.http.get<MatchState>(url);
   }
 }

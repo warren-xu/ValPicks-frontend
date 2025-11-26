@@ -170,11 +170,11 @@ export class AppComponent {
 
     onMapClick(map: MapInfo) {
         if (!this.matchId || !this.match) {
-            this.errorMessage = 'Create or join a match first';
+            this.errorMessage = "Create or join a match first";
             return;
         }
-        if (this.myTeamIndex === null) {
-            this.errorMessage = 'Select your team in the Join section';
+        if (this.role !== "captain" || this.myTeamIndex === null || !this.captainToken) {
+            this.errorMessage = "Only team captains can make picks/bans";
             return;
         }
 
@@ -187,27 +187,27 @@ export class AppComponent {
         }
 
         // Decide action from server phase
-        let action: 'ban' | 'pick';
+        let action: "ban" | "pick";
         if (this.match.phase === BAN_PHASE_ID) {
-            action = 'ban';
+            action = "ban";
         } else if (this.match.phase === PICK_PHASE_ID) {
-            action = 'pick';
+            action = "pick";
         } else {
-            this.errorMessage = 'Match is already completed';
+            this.errorMessage = "Match is already completed";
             return;
         }
 
         this.loading = true;
-        this.matchService.applyAction(this.matchId, this.myTeamIndex, action, map.id)
+        this.matchService.applyAction(this.matchId, this.myTeamIndex, action, map.id, this.captainToken)
             .subscribe({
                 next: state => {
-                    console.log('Action result:', state);
+                    console.log("Action result:", state);
                     this.match = state;
                     this.loading = false;
                 },
                 error: err => {
-                    console.error('Action error:', err);
-                    this.errorMessage = 'Action failed (server rejected it)';
+                    console.error("Action error:", err);
+                    this.errorMessage = "Action rejected by server";
                     this.loading = false;
                 }
             });

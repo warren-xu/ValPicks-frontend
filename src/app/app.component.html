@@ -31,13 +31,20 @@
             <input [(ngModel)]="myMatchId" />
         </div>
         <div class="form-row">
-            <label>Your team index:</label>
+            <label>Your role:</label>
             <select [(ngModel)]="myTeamIndex">
-                <option [ngValue]="0">Team 0</option>
-                <option [ngValue]="1">Team 1</option>
+                <option [ngValue]="0">Team 0 Captain</option>
+                <option [ngValue]="1">Team 1 Captain</option>
+                <option [ngValue]="null">Spectator</option>
             </select>
         </div>
         <button (click)="joinMatch()">Join</button>
+        <p *ngIf="role">
+            Joined as: <strong>{{ role | uppercase }}</strong>
+            <span *ngIf="role === 'captain' && myTeamIndex !== null">
+                (Team {{ myTeamIndex }})
+            </span>
+        </p>
     </section>
 
     <section *ngIf="match">
