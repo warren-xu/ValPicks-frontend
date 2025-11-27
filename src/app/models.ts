@@ -10,8 +10,8 @@ export interface TeamSlot {
 
 export interface Team {
   name: string;
-  slots: TeamSlot[];
   bannedMapIds: number[];
+  pickedMapIds: number[];
 }
 
 export interface MatchState {
