@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { MatchService } from '../match.service';
@@ -37,6 +37,7 @@ export class MatchPageComponent implements OnInit, OnDestroy {
 
     constructor(
         private route: ActivatedRoute,
+        private router: Router,
         private matchService: MatchService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) { }
@@ -77,39 +78,42 @@ export class MatchPageComponent implements OnInit, OnDestroy {
                         this.captainToken = null;
                     }
                 } else {
-                    // SSR pass: no localStorage, don’t assume a role
+                    // SSR pass
                     this.role = null;
                     this.captainToken = null;
                 }
             } else {
-                // /match/:id with no teamIndex -> spectator
+                // /match/:id with no teamIndex means spectator
                 this.role = 'spectator';
                 this.myTeamIndex = null;
                 this.captainToken = null;
             }
 
 
-            this.loadState();
+            this.loadState(true);
             this.startPolling();
         });
     }
 
     ngOnDestroy() {
-        if (this.pollHandle) {
-            clearInterval(this.pollHandle);
-        }
+        this.stopPolling();
     }
 
-    startPolling() {
+    private startPolling() {
         if (this.pollHandle) clearInterval(this.pollHandle);
         this.pollHandle = setInterval(() => {
-            if (this.matchId) {
-                this.loadState();
-            }
+            this.loadState(false);
         }, 2000);
     }
 
-    loadState() {
+    private stopPolling() {
+        if (this.pollHandle) {
+            clearInterval(this.pollHandle);
+            this.pollHandle = null;
+        }
+    }
+
+    loadState(startPollingOnSuccess: boolean) {
         if (!this.matchId) return;
 
         this.matchService.getState(this.matchId)
@@ -120,11 +124,15 @@ export class MatchPageComponent implements OnInit, OnDestroy {
                 error: err => {
                     console.error('Load state error:', err);
                     this.errorMessage = 'Failed to load state';
+
+                    this.stopPolling();
+
+                    this.router.navigate(['/']);
                 }
             });
     }
 
-    // ---- helpers (same as you had, adjusted for this component) ----
+    // helpers
 
     getPhaseLabel(): string {
         if (!this.match) return '';
