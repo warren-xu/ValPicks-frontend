@@ -19,6 +19,7 @@ export interface MatchState {
   phase: number;            // 0=BanPhase,1=PickPhase,2=Completed
   currentTurnTeam: number;  
   currentStepIndex: number;
+  captainTaken: boolean[];
   deciderMapId: number;
   seriesType: 'bo1' | 'bo3';
   teams: Team[];

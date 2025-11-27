@@ -83,7 +83,7 @@
       <h3>{{ team.name }} (Team {{ ti }})</h3>
 
       <p>
-        <strong>Bans:</strong>
+        <strong>Bans: </strong>
         <ng-container *ngIf="team.bannedMapIds.length; else noBans">
           <span *ngFor="let bid of team.bannedMapIds; let last = last">
             {{ getMapNameById(bid) }}<span *ngIf="!last">, </span>
@@ -92,8 +92,8 @@
         <ng-template #noBans>None</ng-template>
       </p>
 
-      <p>
-        <strong>Picks:</strong>
+      <p *ngIf="!isBo1()">
+        <strong>Picks: </strong>
         <ng-container *ngIf="team.pickedMapIds.length; else noPicks">
           <span *ngFor="let pid of team.pickedMapIds; let last = last">
             {{ getMapNameById(pid) }}<span *ngIf="!last">, </span>

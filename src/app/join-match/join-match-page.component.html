@@ -1,22 +1,69 @@
 <section class="card">
   <h2>Join Match</h2>
 
+  <!-- enter match ID -->
   <div class="form-row">
     <label for="matchId">Match ID</label>
-    <input id="matchId" [(ngModel)]="myMatchId" placeholder="e.g. W7eaJ74k" />
+    <input
+      id="matchId"
+      [(ngModel)]="myMatchId"
+      placeholder="e.g. W7eaJ74k"
+    />
   </div>
 
-  <div class="form-row">
-    <label for="role">Your role</label>
-    <select id="role" [(ngModel)]="myTeamIndex">
-      <option [ngValue]="0">Team 0 Captain</option>
-      <option [ngValue]="1">Team 1 Captain</option>
-      <option [ngValue]="null">Spectator</option>
+  <!-- Captain join flow -->
+  <button
+    class="secondary-btn"
+    (click)="loadMatchInfo()"
+    [disabled]="loading || !myMatchId || bothCaptainsJoined"
+  >
+    <span *ngIf="!loading && !bothCaptainsJoined">Join as Captain</span>
+    <span *ngIf="loading">Loading...</span>
+    <span *ngIf="!loading && bothCaptainsJoined">Both captains already joined</span>
+  </button>
+
+  <p class="hint" *ngIf="matchPreview">
+    Loaded match:
+    <strong>{{ matchPreview.teams[0]?.name }}</strong>
+    vs
+    <strong>{{ matchPreview.teams[1]?.name }}</strong>
+  </p>
+
+  <!-- Team selection for captain (only while at least one captain slot is free) -->
+  <div class="form-row" *ngIf="matchPreview && !bothCaptainsJoined">
+    <label>Which team are you?</label>
+    <select [(ngModel)]="selectedTeamName">
+      <ng-container *ngFor="let t of matchPreview.teams; let ti = index">
+        <!-- Hide teams whose captain slot is already taken -->
+        <option *ngIf="!captainTakenForTeam(ti)" [ngValue]="t.name">
+          {{ t.name }}
+        </option>
+      </ng-container>
     </select>
   </div>
 
-  <button class="primary-btn" (click)="joinMatch()" [disabled]="loading">
-    <span *ngIf="!loading">Join</span>
+  <button
+    class="primary-btn"
+    (click)="joinMatchAsCaptain()"
+    [disabled]="loading || !matchPreview || bothCaptainsJoined || !selectedTeamName"
+  >
+    <span *ngIf="!loading">Join Match Pick/Ban as Captain</span>
+    <span *ngIf="loading">Joining...</span>
+  </button>
+
+  <p class="hint" *ngIf="matchPreview && bothCaptainsJoined">
+    Both captain slots are already taken for this match. You can still join as a spectator.
+  </p>
+
+  <hr class="divider" />
+
+  <!-- Spectator join flow -->
+  <button
+    class="secondary-btn"
+    (click)="joinAsSpectator()"
+    [disabled]="loading || !myMatchId"
+  >
+    <span *ngIf="!loading">Join as Spectator</span>
     <span *ngIf="loading">Joining...</span>
   </button>
 

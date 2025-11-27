@@ -64,6 +64,30 @@ select:focus {
   cursor: default;
 }
 
+.secondary-btn {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(75, 85, 99, 0.9);
+  background: rgba(17, 24, 39, 0.9);
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
+}
+
+.secondary-btn:hover:not(:disabled) {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .hint {
   margin-top: 8px;
   font-size: 0.8rem;
