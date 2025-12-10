@@ -2,6 +2,7 @@ export interface MapInfo {
   id: number;
   name: string;
   previewUrl?: string;
+  mapImgUrl?: string;
 }
 
 export interface TeamSlot {
@@ -17,7 +18,7 @@ export interface Team {
 
 export interface MatchState {
   id: string;
-  phase: number;            // 0=BanPhase,1=PickPhase,2=Completed
+  phase: number;            // 0=BanPhase,1=PickPhase,2=SidePhase,3=Completed
   currentTurnTeam: number;  
   currentStepIndex: number;
   captainTaken: boolean[];
@@ -25,4 +26,5 @@ export interface MatchState {
   seriesType: 'bo1' | 'bo3';
   teams: Team[];
   availableMaps: MapInfo[];
+  deciderSide?: number; // 0=Attack,1=Defense,-1=Undefined
 }
