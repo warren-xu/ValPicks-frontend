@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatchState } from './models';
 import { Observable } from 'rxjs';
+import { environment } from './environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MatchService {
-  private readonly baseUrl = '/api'; // goes through proxy to http://localhost:8080
+  private readonly baseUrl = environment.apiBaseUrl;
 
   constructor(private http: HttpClient) {}
 
