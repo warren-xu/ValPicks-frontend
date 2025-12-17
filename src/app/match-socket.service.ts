@@ -3,6 +3,7 @@ import { Injectable, Inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { MatchState } from './models';
+import { environment } from '../environments/environment.prod';
 
 @Injectable({ providedIn: 'root' })
 export class MatchSocketService {
@@ -32,7 +33,7 @@ export class MatchSocketService {
     }
 
     this.currentMatchId = matchId;
-    const wsUrl = `ws://localhost:8080/ws`;
+    const wsUrl = `${environment.wsBaseUrl}/ws`;
     const socket = new WebSocket(wsUrl);
     this.socket = socket;
 
