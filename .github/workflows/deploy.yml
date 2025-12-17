@@ -29,6 +29,18 @@ jobs:
 
       - run: npm ci
       - run: npm run build -- --configuration production --base-href "/REPO/"
+      - name: Fix GitHub Pages entry file (index.html)
+        run: |
+          set -e
+          BROWSER_DIR="dist/<your-angular-project-name>/browser"
+
+          ls -la "$BROWSER_DIR"
+          if [ -f "$BROWSER_DIR/index.csr.html" ]; then
+            cp "$BROWSER_DIR/index.csr.html" "$BROWSER_DIR/index.html"
+            echo "Copied index.csr.html -> index.html"
+          fi
+
+          test -f "$BROWSER_DIR/index.html"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/map-veto-frontend/browser
