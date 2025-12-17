@@ -32,7 +32,7 @@ jobs:
       - name: Fix GitHub Pages entry file (index.html)
         run: |
           set -e
-          BROWSER_DIR="dist/<your-angular-project-name>/browser"
+          BROWSER_DIR="dist/map-veto-frontend/browser"
 
           ls -la "$BROWSER_DIR"
           if [ -f "$BROWSER_DIR/index.csr.html" ]; then
