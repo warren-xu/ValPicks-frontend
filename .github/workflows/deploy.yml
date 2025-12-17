@@ -17,30 +17,39 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Inject API base URL
-        run: |
-             sed -i "s|__API_BASE_URL__|${{ secrets.API_BASE_URL }}|g" src/environments/environment.prod.ts
 
       - run: npm ci
-      - run: npm run build -- --configuration production --base-href "/REPO/"
-      - name: Fix GitHub Pages entry file (index.html)
+
+      - name: Inject API base URL
+        run: |
+          sed -i "s|__API_BASE_URL__|${{ secrets.API_BASE_URL }}|g" src/environments/environment.prod.ts
+
+      - run: npm run build -- --configuration production --base-href "/ValPicks-frontend/" --deploy-url "/ValPicks-frontend/"
+
+      - name: Fix GitHub Pages entry file + SPA fallback
         run: |
           set -e
           BROWSER_DIR="dist/map-veto-frontend/browser"
 
           ls -la "$BROWSER_DIR"
+
           if [ -f "$BROWSER_DIR/index.csr.html" ]; then
             cp "$BROWSER_DIR/index.csr.html" "$BROWSER_DIR/index.html"
-            echo "Copied index.csr.html -> index.html"
           fi
 
           test -f "$BROWSER_DIR/index.html"
+          cp "$BROWSER_DIR/index.html" "$BROWSER_DIR/404.html"
+
+      - name: Sanity check index
+        run: |
+          find dist -maxdepth 4 -type f -name "index.html" -print
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/map-veto-frontend/browser
