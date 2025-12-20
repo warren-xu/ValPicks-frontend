@@ -26,5 +26,6 @@ export interface MatchState {
   seriesType: 'bo1' | 'bo3';
   teams: Team[];
   availableMaps: MapInfo[];
-  deciderSide?: number; // 0=Attack,1=Defense,-1=Undefined
+  deciderSide?: number; 
+  deciderSidePickerTeam?: number; 
 }

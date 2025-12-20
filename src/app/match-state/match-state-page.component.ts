@@ -18,6 +18,10 @@ const BAN_PHASE_ID = 0;
 const PICK_PHASE_ID = 1;
 const SIDE_PHASE_ID = 2;
 const COMPLETED_PHASE_ID = 3;
+const TEAM_A = 0;
+const TEAM_B = 1;
+const ATTACK_SIDE_ID = 0;
+const DEFEND_SIDE_ID = 1;
 
 type Role = 'captain' | 'spectator' | null;
 
@@ -197,7 +201,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
         return 'Ban Phase';
       case PICK_PHASE_ID:
         return 'Pick Phase';
-      case SIDE_PHASE_ID:     
+      case SIDE_PHASE_ID:
         return 'Side Selection';
       case COMPLETED_PHASE_ID:
         return 'Completed';
@@ -265,7 +269,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     // Find the map object to get its preview image
     const map = this.match.availableMaps.find(m => m.id === this.match!.deciderMapId);
     // Fallback to a default if not found
-    return map && map.mapImgUrl ? map.mapImgUrl : "" ;
+    return map && map.mapImgUrl ? map.mapImgUrl : "";
   }
 
   goHome(): void {
@@ -273,34 +277,29 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   }
 
   getAttackingTeamName(): string {
-    if (!this.match) return 'TBD';
+  if (!this.match) return 'TBD';
+  const picker = this.match.deciderSidePickerTeam;
+  if (picker !== TEAM_A && picker !== TEAM_B) return 'TBD';
 
-    const sidePickerIndex = 1; // Team B
-    const otherTeamIndex = 0;  // Team A
+  const other = picker === TEAM_A ? TEAM_B : TEAM_A;
 
-    if (this.match.deciderSide === 0) {
-      // Picker chose Attack
-      return this.match.teams[sidePickerIndex].name;
-    } else {
-      // Picker chose Defense, so the other team Attacks
-      return this.match.teams[otherTeamIndex].name;
-    }
-  }
+  return this.match.deciderSide === ATTACK_SIDE_ID
+    ? this.match.teams[picker].name
+    : this.match.teams[other].name;
+}
 
-  getDefendingTeamName(): string {
-    if (!this.match) return 'TBD';
+getDefendingTeamName(): string {
+  if (!this.match) return 'TBD';
+  const picker = this.match.deciderSidePickerTeam;
+  if (picker !== TEAM_A && picker !== TEAM_B) return 'TBD';
 
-    const sidePickerIndex = 1;
-    const otherTeamIndex = 0;
+  const other = picker === TEAM_A ? TEAM_B : TEAM_A;
 
-    if (this.match.deciderSide === 1) {
-      // Picker chose Defense
-      return this.match.teams[sidePickerIndex].name;
-    } else {
-      // Picker chose Attack, so the other team Defends
-      return this.match.teams[otherTeamIndex].name;
-    }
-  }
+  return this.match.deciderSide === DEFEND_SIDE_ID
+    ? this.match.teams[picker].name
+    : this.match.teams[other].name;
+}
+
 
   // Private helpers
 
@@ -423,7 +422,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
           mapName: map.name,
           imageUrl: getImg(map),
           selectedBy: this.match.teams[0].name,
-          accentClass: 'accent-cyan' 
+          accentClass: 'accent-cyan'
         });
       }
     }
@@ -436,7 +435,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
           mapName: map.name,
           imageUrl: getImg(map),
           selectedBy: this.match.teams[1].name,
-          accentClass: 'accent-red' 
+          accentClass: 'accent-red'
         });
       }
     }
@@ -449,7 +448,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
           mapName: map.name,
           imageUrl: getImg(map),
           selectedBy: 'Decider',
-          accentClass: 'accent-white' 
+          accentClass: 'accent-white'
         });
       }
     }

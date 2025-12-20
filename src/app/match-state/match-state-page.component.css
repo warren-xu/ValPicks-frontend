@@ -551,7 +551,7 @@
 }
 
 /* Typography */
-.role-title {
+.team-name-large {
   font-family: 'Teko', sans-serif;
   font-size: 5rem;
   line-height: 0.8;
@@ -561,9 +561,9 @@
   letter-spacing: 2px;
 }
 
-.team-name-large {
+.role-title {
   font-family: 'Oswald', sans-serif;
-  font-size: 3rem;
+  font-size: 2rem;
   font-weight: 500;
   text-transform: uppercase;
   margin-top: 1rem;
@@ -582,7 +582,7 @@
 
 .attack-panel .role-title, 
 .attack-panel .role-icon {
-  color: #ffffff; /* White text for "ATTACKING" looks cleaner, or use #00ffbc */
+  color: #ffffff;
   text-shadow: 0 0 20px rgba(0, 255, 188, 0.4);
 }
 
@@ -605,7 +605,7 @@
   text-transform: uppercase;
   color: rgb(255,255,255); /* Subtle watermark effect */
   position: absolute;
-  top: -50%;
+  top: -70%;
   left: 50%;
   transform: translate(-50%, -50%);
   white-space: nowrap;
