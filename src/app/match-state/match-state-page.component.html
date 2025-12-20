@@ -13,12 +13,6 @@
       <div class="side-panel attack-panel">
         <h2 class="role-title">ATTACKING</h2>
         <div class="team-name-large">{{ getAttackingTeamName() }}</div>
-        <div class="team-logo-placeholder">
-          <svg viewBox="0 0 24 24" class="role-icon">
-            <path fill="currentColor"
-              d="M7,2L13,8L15,6L21,12L19,14L13,8L9,12L3,6L7,2M11,14L9,16L13,20L15,18L11,14Z" />
-          </svg>
-        </div>
       </div>
 
       <div class="center-info">
@@ -29,12 +23,6 @@
       <div class="side-panel defend-panel">
         <h2 class="role-title">DEFENDING</h2>
         <div class="team-name-large">{{ getDefendingTeamName() }}</div>
-        <div class="team-logo-placeholder">
-          <svg viewBox="0 0 24 24" class="role-icon">
-            <path fill="currentColor"
-              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z" />
-          </svg>
-        </div>
       </div>
     </div>
   </section>
@@ -140,27 +128,27 @@
         <div class="side-selection-container">
           <button class="side-btn attack" (click)="onSideClick(0)" [disabled]="!isMyTurn">
             <div class="side-icon">
-              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M7,2L13,8L15,6L21,12L19,14L13,8L9,12L3,6L7,2M11,14L9,16L13,20L15,18L11,14Z" /></svg>
+              <img src="public/sideimgs/attack-icon.png" alt="Attack Icon" class="role-icon"/>
             </div>
             <span class="side-label">ATTACK</span>
           </button>
           <div class="vs-divider">OR</div>
           <button class="side-btn defense" (click)="onSideClick(1)" [disabled]="!isMyTurn">
             <div class="side-icon">
-              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z" /></svg>
+              <img src="public/sideimgs/defense-icon.png" alt="Defense Icon" class="role-icon"/>
             </div>
             <span class="side-label">DEFENSE</span>
           </button>
         </div>
       </ng-container>
+
       <ng-template #mapGridContent>
         <div class="maps-grid">
           <button *ngFor="let map of m.availableMaps" class="map-btn" type="button" 
             [class.banned]="isMapBanned(map)"
             [class.picked]="isMapPicked(map)" 
             [class.decider]="isDecider(map)" 
-            (click)="onMapClick(map)"
-            >
+            (click)="onMapClick(map)">
             <div class="map-media-wrapper">
               <video 
               #videoRef 
@@ -176,6 +164,11 @@
               (mouseleave)="onMapHoverLeave(videoRef)"
               ></video>
               
+              <div class="map-static-img" 
+                  *ngIf="map.mapImgUrl" 
+                  [style.background-image]="'url(' + map.mapImgUrl + ')'">
+              </div>
+
               <div class="map-overlay">
                 <div class="map-name">
                   {{ map.name }}
@@ -184,8 +177,8 @@
                   [class.map-status-decider]="isDecider(map)"
                   [class.map-status-banned]="!isDecider(map) && isMapBanned(map)"
                   [class.map-status-picked]="!isDecider(map) && !isMapBanned(map) && isMapPicked(map)"
-                  [class.map-status-available]="!isDecider(map) && !isMapBanned(map) && !isMapPicked(map)"
-                  >
+                  [class.map-status-available]="!isDecider(map) && !isMapBanned(map) && !isMapPicked(map)">
+                  
                   <ng-container *ngIf="isDecider(map)">DECIDER</ng-container>
                   <ng-container *ngIf="!isDecider(map) && isMapBanned(map)">BANNED</ng-container>
                   <ng-container *ngIf="!isDecider(map) && !isMapBanned(map) && isMapPicked(map)">
