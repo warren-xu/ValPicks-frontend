@@ -27,5 +27,5 @@ export interface MatchState {
   teams: Team[];
   availableMaps: MapInfo[];
   deciderSide?: number; 
-  deciderSidePickerTeam?: number; 
+  deciderSidePickerTeam: number; 
 }
