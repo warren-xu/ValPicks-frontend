@@ -296,6 +296,17 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
   // Helpers
 
+  // Check if UI should be disabled if not captain's turn
+  isInteractionDisabled(): boolean {
+    if (!this.match) return false;
+
+    const isSpectator = this.myTeamIndex !== TEAM_A && this.myTeamIndex !== TEAM_B;
+    
+    if (isSpectator) return false;
+
+    return this.match.currentTurnTeam != this.myTeamIndex;
+  }
+
   trackByMapId(index: number, map: MapInfo): number {
     return map.id;
   }
