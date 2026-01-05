@@ -20,7 +20,6 @@
   background: rgba(15, 25, 35, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
   position: relative;
   padding: 4rem 2rem;
   text-align: center;
