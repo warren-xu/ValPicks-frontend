@@ -713,8 +713,6 @@
   border: 1px solid var(--stroke);
   background: linear-gradient(180deg, rgba(12,18,26,0.62), rgba(12,18,26,0.42));
   box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-radius: 18px;
   overflow: hidden; /* keep header + entries clean */
 }
@@ -947,7 +945,6 @@
   align-items: center;
   justify-content: center;
   background: rgba(15, 25, 35, 0.85); /* Dark semi-transparent base */
-  backdrop-filter: blur(8px);
   animation: fadeIn 0.3s ease-out;
   opacity: 1;
   transition: opacity 0.5s ease-out, transform 0.5s ease-out;
