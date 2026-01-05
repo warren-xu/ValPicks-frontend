@@ -139,9 +139,9 @@
                 [disabled]="!isMyTurn" [class.banned]="isMapBanned(map)" [class.picked]="isMapPicked(map)"
                 [class.decider]="isDecider(map)" (click)="onMapClick(map)">
                 <div class="map-media-wrapper">
-                  <video #videoRef class="map-video" *ngIf="map.previewUrl" [src]="map.previewUrl" playsinline loop
+                  <!-- <video #videoRef class="map-video" *ngIf="map.previewUrl" [src]="map.previewUrl" playsinline loop
                     muted preload="metadata" controlslist="nodownload noplaybackrate noremoteplayback"
-                    (mouseenter)="onMapHoverEnter(videoRef)" (mouseleave)="onMapHoverLeave(videoRef)"></video>
+                    (mouseenter)="onMapHoverEnter(videoRef)" (mouseleave)="onMapHoverLeave(videoRef)"></video> -->
 
                   <div class="map-static-img" *ngIf="map.mapImgUrl"
                     [style.background-image]="'url(' + map.mapImgUrl + ')'"></div>
