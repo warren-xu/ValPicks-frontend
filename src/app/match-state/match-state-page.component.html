@@ -137,14 +137,16 @@
             <div class="maps-grid" [class.inactive-turn]="isInteractionDisabled()">
               <button *ngFor="let map of m.availableMaps; trackBy: trackByMapId" class="map-btn" type="button"
                 [disabled]="!isMyTurn" [class.banned]="isMapBanned(map)" [class.picked]="isMapPicked(map)"
-                [class.decider]="isDecider(map)" (click)="onMapClick(map)">
+                [class.decider]="isDecider(map)" (click)="onMapClick(map)" (mouseenter)="onMapHoverEnter($event)"
+                (mouseleave)="onMapHoverLeave($event)">
                 <div class="map-media-wrapper">
-                  <video #videoRef class="map-video" *ngIf="map.previewUrl" [src]="map.previewUrl" playsinline loop
-                    muted preload="metadata" controlslist="nodownload noplaybackrate noremoteplayback"
-                    (mouseenter)="onMapHoverEnter(videoRef)" (mouseleave)="onMapHoverLeave(videoRef)"></video>
+                  <video class="map-video" *ngIf="map.previewUrl" [src]="map.previewUrl" playsinline loop muted
+                    preload="none" controlslist="nodownload noplaybackrate noremoteplayback">
+                  </video>
 
                   <div class="map-static-img" *ngIf="map.mapImgUrl"
-                    [style.background-image]="'url(' + map.mapImgUrl + ')'"></div>
+                    [style.background-image]="'url(' + map.mapImgUrl + ')'">
+                  </div>
 
                   <div class="map-overlay">
                     <div class="map-name">{{ map.name }}</div>
@@ -152,7 +154,8 @@
                       [class.banned]="!isDecider(map) && isMapBanned(map)"
                       [class.picked]="!isDecider(map) && isMapPicked(map)">
 
-                      {{ (isMapBanned(map) ? 'BANNED' : (isMapPicked(map) ? 'PICKED' : 'DECIDER')) }}
+                      {{ (isMapBanned(map) ? 'BANNED' : (isMapPicked(map) ? 'PICKED' : (isDecider(map) ? 'DECIDER' :
+                      'AVAILABLE'))) }}
 
                     </div>
                   </div>

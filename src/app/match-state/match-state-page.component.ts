@@ -109,18 +109,35 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
   // Public handlers 
 
-  onMapHoverEnter(video: HTMLVideoElement | null): void {
-    if (!video) return;
-    try {
-      video.muted = true;
-      video.disablePictureInPicture = true;
-      video.currentTime = 0;
-      video.play();
-    } catch (e) {
-      console.warn('Could not play preview video', e);
+  onMapHoverEnter(event: Event): void {
+    const button = event.currentTarget as HTMLElement;
+    const video = button.querySelector('video');
+
+    if (video) {
+      try {
+        video.muted = true; 
+        video.currentTime = 0;
+        const playPromise = video.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+          });
+        }
+      } catch (e) {
+        console.warn('Could not play preview video', e);
+      }
     }
   }
 
+  onMapHoverLeave(event: Event): void {
+    const button = event.currentTarget as HTMLElement;
+    const video = button.querySelector('video');
+    
+    if (video) {
+      video.pause();
+      video.currentTime = 0; 
+    }
+  }
   copyMatchId(): void {
     if (!this.matchId) return;
 
@@ -136,12 +153,6 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     }).catch(err => {
       console.error('Failed to copy text: ', err);
     });
-  }
-
-  onMapHoverLeave(video: HTMLVideoElement | null): void {
-    if (!video) return;
-    video.pause();
-    video.currentTime = 0;
   }
 
   onSideClick(sideId: number): void {
