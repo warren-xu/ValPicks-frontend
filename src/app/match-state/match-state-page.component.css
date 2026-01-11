@@ -405,13 +405,26 @@
 }
 .map-btn:disabled:hover { transform: none; box-shadow: none; border-color: rgba(255,255,255,0.1); }
 
-/* Vid/Img bg */
-.map-media-wrapper, .map-video, .map-static-img, .column-overlay {
+.map-media-wrapper, .map-video, .column-overlay {
   position: relative;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.map-static-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 2; /* Sits on top of video */
+  
+  opacity: 1; /* Fully visible by default */
+  transition: opacity 0.4s ease-in-out; /* Smooth fade */
+}
+
+.map-btn:hover .map-static-img {
+  opacity: 0;
 }
 
 /* Overlays for picking and banning */
@@ -423,13 +436,14 @@
   justify-content: flex-end;
   pointer-events: none;
   border: 2px solid black;
+  z-index: 3;
 }
 
 /* Map Name */
 .map-name {
   background: rgba(0,0,0,0.8);
   color: var(--val-white);
-  padding: 0.5rem;
+  padding: 0.2rem;
   text-align: center;
   font-family: var(--font-header);
   font-size: 1.5rem;
@@ -438,14 +452,19 @@
   letter-spacing: 1px;
   width: 100%;
   transition: background 0.3s, color 0.3s;
+  z-index: 3;
 }
 
 .map-btn:not(:disabled):hover .map-name { background: var(--val-white); color: var(--val-bg-dark); }
 
 /* Map States (Banned/Picked) */
-.map-btn.banned { pointer-events: none; filter: grayscale(100%); border-color: var(--val-red); }
+.map-btn.banned { pointer-events: none; border-color: var(--val-red); }
 .map-btn.banned .map-video { opacity: 0.2; }
-
+.map-btn.banned .map-video,
+.map-btn.banned .map-static-img {
+  filter: grayscale(100%);
+  opacity: 0.2; 
+}
 .map-btn.picked { box-shadow: 0 0 20px rgba(0, 255, 188, 0.2); }
 .map-btn.picked .map-name { background: var(--val-cyan); color: var(--val-bg-dark); }
 
@@ -460,6 +479,7 @@
   font-size: 1.5rem;
   text-shadow: 0 2px 10px rgba(0,0,0,1);
   display: none;
+  z-index: 4;
 }
 
 .map-status-pill.banned { color: var(--val-red); display: block; }
@@ -654,12 +674,9 @@
   background-size: cover;
   background-position: center;
   z-index: 1;
-  
-  /* Cloud Effect */
-  /* This creates a radial mask that makes the edges of the image transparent, 
-     fading it into the dark background color set on .preview-layout */
-  -webkit-mask-image: radial-gradient(ellipse at center, black 40%, rgba(0,0,0,0.8) 60%, transparent 100%);
-          mask-image: radial-gradient(ellipse at center, black 40%, rgba(0,0,0,0.8) 60%, transparent 100%);
+
+  /* Surround screen with cloud */
+  mask-image: radial-gradient(ellipse at center, black 40%, rgba(0,0,0,0.8) 60%, transparent 100%);
           
   /* Subtle scale up to ensure the misty edges push off-screen */
   transform: scale(1.05);
@@ -940,12 +957,11 @@
 .transition-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999; /* Top of everything */
+  z-index: 9;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(15, 25, 35, 0.85); /* Dark semi-transparent base */
-  animation: fadeIn 0.3s ease-out;
   opacity: 1;
   transition: opacity 0.5s ease-out, transform 0.5s ease-out;
 }
@@ -1016,7 +1032,7 @@
 .page-exit-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10000; /* Highest priority */
+  z-index: 10;
   background: black;
   opacity: 0;
   animation: fadeToBlack 1s forwards; /* 1s duration matches TS timeout */
