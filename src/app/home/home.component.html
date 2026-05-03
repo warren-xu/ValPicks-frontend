@@ -4,20 +4,65 @@
       <div class="hero-content">
         <h1 class="hero-title">MAP VETO</h1>
         <h2 class="hero-subtitle">VALORANT TOURNAMENT PICK & BAN</h2>
-        
+
         <p class="hero-desc">
-          Create a lobby, share the link, and simulate the professional 
+          Create a lobby, share the link, and simulate pro VALORANT's
           map veto process with real-time updates.
         </p>
 
         <div class="action-buttons">
-          <button class="val-btn primary big" (click)="navigateTo('/create')">
+          <button class="val-btn primary" (click)="navigateTo('/create')">
             CREATE MATCH
           </button>
-          
-          <button class="val-btn secondary big" (click)="navigateTo('/join')">
+
+          <button class="val-btn secondary" (click)="navigateTo('/join')">
             JOIN MATCH
           </button>
+          <button class="val-btn secondary" (click)="openInstructions()">
+            INSTRUCTIONS
+          </button>
+        </div>
+
+        <div class="modal-backdrop" *ngIf="showInstructions">
+          <div class="modal-card">
+
+            <header class="modal-header">
+              <h2>TUTORIAL</h2>
+              <button class="close-btn" (click)="closeInstructions()">✕</button>
+            </header>
+
+            <div class="modal-body">
+              <div class="tutorial-visual">
+                <div class="tutorial-img-placeholder"
+                  [style.background-image]="'url(' + tutorialSteps[instructionStep].image + ')'">
+                  <span *ngIf="!tutorialSteps[instructionStep].image">IMAGE: {{ tutorialSteps[instructionStep].title
+                    }}</span>
+                </div>
+              </div>
+
+              <div class="tutorial-content">
+                <h3 class="step-title">{{ tutorialSteps[instructionStep].title }}</h3>
+                <p class="step-desc">{{ tutorialSteps[instructionStep].text }}</p>
+              </div>
+            </div>
+
+            <footer class="modal-footer">
+              <div class="step-dots">
+                <span *ngFor="let s of tutorialSteps; let i = index" class="dot"
+                  [class.active]="i === instructionStep"></span>
+              </div>
+
+              <div class="modal-actions">
+                <button class="modal-btn secondary" (click)="prevInstruction()" [disabled]="instructionStep === 0">
+                  PREVIOUS
+                </button>
+                <button class="modal-btn primary" (click)="nextInstruction()">
+                  {{ instructionStep === tutorialSteps.length - 1 ? 'FINISH' : 'NEXT' }}
+                </button>
+              </div>
+            </footer>
+
+          </div>
         </div>
       </div>
     </section>
