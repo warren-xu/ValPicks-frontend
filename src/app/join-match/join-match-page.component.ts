@@ -100,8 +100,6 @@ export class JoinMatchPageComponent {
                 this.loading = false;
                 this.infoMessage = 'Joined as SPECTATOR';
 
-                // optional: store spectator role in localStorage & route to /match/:id
-                // ...
                 this.router.navigate(['/match', resp.matchId]);
             },
             error: err => {
@@ -156,10 +154,6 @@ export class JoinMatchPageComponent {
                         );
                         this.router.navigate(['/match', resp.matchId, 'team', resp.team]);
                     } else {
-                        localStorage.setItem(
-                            `match_${resp.matchId}_spectator`,
-                            JSON.stringify({ role: 'spectator' })
-                        );
                         this.router.navigate(['/match', resp.matchId], {replaceUrl: true});
                     }
                 } else {

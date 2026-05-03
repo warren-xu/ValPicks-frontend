@@ -20,8 +20,6 @@ const SIDE_PHASE_ID = 2;
 const COMPLETED_PHASE_ID = 3;
 const TEAM_A = 0;
 const TEAM_B = 1;
-const ATTACK_SIDE_ID = 0;
-const DEFEND_SIDE_ID = 1;
 
 type Role = 'captain' | 'spectator' | null;
 
@@ -86,6 +84,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
   // Internals
   private wsSub?: Subscription;
+  private routeSub?: Subscription;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -105,6 +104,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.matchSocket.disconnect();
     this.wsSub?.unsubscribe();
+    this.routeSub?.unsubscribe();
   }
 
   // Public handlers 
@@ -484,7 +484,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   }
 
   private subscribeToRouteParams(): void {
-    this.route.paramMap.subscribe((params) => {
+    this.routeSub = this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (!id) return;
 
