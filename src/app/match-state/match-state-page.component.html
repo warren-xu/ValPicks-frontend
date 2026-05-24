@@ -85,8 +85,13 @@
                   </ng-container>
                   <ng-template #enemySideTurn>
                     <h2 class="header-title enemy-text">
-                      {{ role === 'spectator' ? 'SPECTATING:' : 'OPPONENT CHOOSING SIDE ON' }}
-                      <span class="val-cyan-text">{{ getCurrentStepMapName() }}</span>
+                      <ng-container *ngIf="role === 'spectator'; else enemySideText">
+                        <span class="val-cyan-text">{{ getCurrentTeamName() }}</span>
+                        CHOOSING SIDE ON <span class="val-white">{{ getCurrentStepMapName() }}</span>
+                      </ng-container>
+                      <ng-template #enemySideText>
+                        OPPONENT CHOOSING SIDE ON <span class="val-cyan-text">{{ getCurrentStepMapName() }}</span>
+                      </ng-template>
                     </h2>
                   </ng-template>
                 </ng-container>

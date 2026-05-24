@@ -338,6 +338,9 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
     // If I am a spectator, show the actual team name (e.g. "Team A")
     if (this.role === 'spectator' || this.myTeamIndex === null) {
+      if (this.isSidePhase) {
+        return '';
+      }
       return this.getCurrentTeamName();
     }
 
