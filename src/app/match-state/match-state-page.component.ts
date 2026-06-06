@@ -179,10 +179,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
         this.captainToken!
       )
       .subscribe({
-        next: (state) => {
-          this.match = state;
-          this.loading = false;
-        },
+        next: (state) => this.applyActionState(state),
         error: (err) => {
           console.error('Action error:', err);
           this.errorMessage = 'Action rejected by server';
@@ -231,16 +228,28 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
         this.captainToken!
       )
       .subscribe({
-        next: (state) => {
-          this.match = state;
-          this.loading = false;
-        },
+        next: (state) => this.applyActionState(state),
         error: (err) => {
           console.error('Action error:', err);
           this.errorMessage = 'Action rejected by server';
           this.loading = false;
         },
       });
+  }
+
+  private applyActionState(state: MatchState): void {
+    if (this.match && state.currentStepIndex > this.match.currentStepIndex) {
+      this.triggerTransitionOverlay(state, this.match.currentStepIndex);
+    }
+
+    this.match = state;
+    this.previousStepIndex = state.currentStepIndex;
+    this.rebuildTimelineRows();
+    this.loading = false;
+
+    if (state.phase === COMPLETED_PHASE_ID) {
+      this.matchSocket.disconnect();
+    }
   }
 
   // Match Log Helpers
@@ -251,9 +260,18 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     return 'SIDE';
   }
 
-  private rightLabelFor(kind: StepKind): string {
+  private rightLabelFor(
+    kind: StepKind,
+    sideVal?: number,
+    isDone?: boolean,
+    teamName?: string
+  ): string {
     if (kind === 'BAN') return 'BAN MAP';
     if (kind === 'PICK') return 'CHOOSE MAP';
+    if (isDone && (sideVal === 0 || sideVal === 1)) {
+      const sideAbbrev = sideVal === 0 ? 'ATK' : 'DEF';
+      return teamName ? `${sideAbbrev} ${teamName}` : sideAbbrev;
+    }
     return 'CHOOSE SIDE';
   }
 
@@ -284,6 +302,11 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
       const kind = this.actionToKind(s.action);
       const mapId = m.stepMapIds?.[i] ?? 0;
       const sideVal = m.stepSideVals?.[i];
+      const teamName = m.teams[s.teamIndex]?.name;
+      const isDone =
+        kind === 'SIDE'
+          ? sideVal === 0 || sideVal === 1
+          : !!mapId;
 
       const map = mapId ? this.getMapById(mapId) : undefined;
 
@@ -292,9 +315,9 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
         stepNum: this.pad2(i + 1),
         teamIndex: s.teamIndex,
         kind,
-        rightLabel: this.rightLabelFor(kind),
-        isCurrent: m.currentStepIndex === i,
-        isDone: !!mapId,
+        rightLabel: this.rightLabelFor(kind, sideVal, isDone, teamName),
+        isCurrent: m.phase !== COMPLETED_PHASE_ID && m.currentStepIndex === i,
+        isDone,
 
         mapName: map?.name,
         mapImgUrl: map?.mapImgUrl,
@@ -310,6 +333,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   // Check if UI should be disabled if not captain's turn
   isInteractionDisabled(): boolean {
     if (!this.match) return false;
+    if (this.isCompletedPhase) return true;
 
     const isSpectator = this.myTeamIndex !== TEAM_A && this.myTeamIndex !== TEAM_B;
     
@@ -394,8 +418,13 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   }
 
   getMapNameById(mapId: number): string {
-    if (!this.match || !mapId) return '';
-    const map = this.match.availableMaps.find((m) => m.id === mapId);
+    return this.getMapNameFromState(this.match, mapId);
+  }
+
+  private getMapNameFromState(state: MatchState | undefined, mapId: number): string {
+    if (!state || !mapId) return '';
+    const maps = state.availableMaps ?? this.match?.availableMaps ?? [];
+    const map = maps.find((m) => m.id === mapId);
     return map ? map.name : `Map ${mapId}`;
   }
 
@@ -438,6 +467,10 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
+  goToSummary(): void {
+    this.router.navigate(['/match', this.matchId, 'preview']);
+  }
+
   // Private helpers
 
   private get isBrowser(): boolean {
@@ -452,7 +485,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
     if (!mapId) return;
 
-    const mapName = this.getMapNameById(mapId);
+    const mapName = this.getMapNameFromState(newState, mapId);
 
     // Set text/class (same as before)
     if (step.action === 0) {
@@ -524,16 +557,11 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
           this.match = state;
         }
         this.previousStepIndex = this.match.currentStepIndex;
+        this.rebuildTimelineRows();
 
         if (this.match.phase === COMPLETED_PHASE_ID) {
-          // Wait 3 seconds so users see the final "PICKED/BANNED" overlay
-          this.router.navigate(['/match', this.matchId, 'preview']);
-
-          
-          return;
+          this.matchSocket.disconnect();
         }
-
-        this.rebuildTimelineRows();
       }
     });
   }
@@ -588,13 +616,12 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   private initMatchWithWebSocket(id: string): void {
     this.matchService.getState(id).subscribe({
       next: (state) => {
-        if (state.phase === COMPLETED_PHASE_ID) {
-          this.router.navigate(['/match', id, 'preview']);
-          return;
-        }
         this.match = state;
+        this.previousStepIndex = state.currentStepIndex;
         this.rebuildTimelineRows();
-        this.matchSocket.connect(id);
+        if (state.phase !== COMPLETED_PHASE_ID) {
+          this.matchSocket.connect(id);
+        }
       },
       error: (err) => {
         console.error('Initial load error', err);
@@ -634,6 +661,10 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
   get isSidePhase(): boolean {
     return this.match?.phase === SIDE_PHASE_ID;
+  }
+
+  get isCompletedPhase(): boolean {
+    return this.match?.phase === COMPLETED_PHASE_ID;
   }
 
   get actionColorClass(): string {

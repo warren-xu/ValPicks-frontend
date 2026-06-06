@@ -10,13 +10,9 @@
 
   <div class="state-body">
     <aside class="log-sidebar">
-      <div class="log-header">
-        <h3>Match Log</h3>
-        <span class="live-indicator">LIVE</span>
-      </div>
       <div class="log-content">
         <div *ngFor="let row of timelineRows" class="step-card" [class.current]="row.isCurrent"
-          [class.done]="row.isDone">
+          [class.done]="row.isDone" [class.team-a]="row.teamIndex === 0" [class.team-b]="row.teamIndex === 1">
           <!-- top -->
           <div class="step-strip">
             <div class="strip-left">
@@ -30,20 +26,23 @@
           </div>
 
           <!-- map -->
-          <div class="step-body" *ngIf="row.kind !== 'SIDE'"
-            [style.background-image]="row.mapImgUrl ? ('url(' + row.mapImgUrl + ')') : 'none'">
-            <div class="step-overlay"></div>
+          <div class="step-body" *ngIf="row.kind !== 'SIDE'">
+            <ng-container *ngIf="row.isDone; else pending">
+              <div class="step-map-thumb"
+                [style.background-image]="row.mapImgUrl ? ('url(' + row.mapImgUrl + ')') : 'none'">
+                <div class="step-map-overlay"></div>
+                <div class="step-map-info">
+                  <div class="step-map">{{ row.mapName }}</div>
+                  <div class="step-sub" *ngIf="row.sideLabel">{{ row.sideLabel }}</div>
+                </div>
+              </div>
+            </ng-container>
 
-            <div class="step-body-content">
-              <ng-container *ngIf="row.isDone; else pending">
-                <div class="step-map">{{ row.mapName }}</div>
-                <div class="step-sub" *ngIf="row.sideLabel">{{ row.sideLabel }}</div>
-              </ng-container>
-
-              <ng-template #pending>
-                <div class="step-dots">•••</div>
-              </ng-template>
-            </div>
+            <ng-template #pending>
+              <div class="step-pending">
+                <span class="step-dots">•••</span>
+              </div>
+            </ng-template>
           </div>
         </div>
       </div>
@@ -77,6 +76,12 @@
             <!-- Tells User the Phase -->
             <div class="stage-callout">
               <div class="callout-text">
+                <ng-container *ngIf="isCompletedPhase; else activeMatchHeader">
+                  <h2 class="header-title">MATCH COMPLETE</h2>
+                  <p class="completed-subtitle">Review the pick/ban log or view the final summary.</p>
+                </ng-container>
+
+                <ng-template #activeMatchHeader>
                 <ng-container *ngIf="isSidePhase; else mapPhaseHeader">
                   <ng-container *ngIf="isMyTurn; else enemySideTurn">
                     <h2 class="header-title my-turn">
@@ -112,10 +117,14 @@
                     </h2>
                   </ng-template>
                 </ng-template>
+                </ng-template>
               </div>
 
               <div class="stage-right">
-                <span class="pill pill-turn" [class.friendly]="role === 'captain' && isMyTurn"
+                <button *ngIf="isCompletedPhase" class="nav-btn summary-btn" type="button" (click)="goToSummary()">
+                  VIEW SUMMARY
+                </button>
+                <span *ngIf="!isCompletedPhase" class="pill pill-turn" [class.friendly]="role === 'captain' && isMyTurn"
                   [class.enemy]="role === 'captain' && !isMyTurn">
                   {{ getTurnDisplay() }}
                 </span>
@@ -124,7 +133,7 @@
           </header>
 
 
-          <ng-container *ngIf="isSidePhase; else mapGridContent">
+          <ng-container *ngIf="!isCompletedPhase && isSidePhase; else mapGridContent">
             <div class="side-selection-container">
               <button class="side-btn attack" (click)="onSideClick(0)" [disabled]="!isMyTurn">
                 <div class="side-icon"><img src="public/sideimgs/attack-icon.png" alt="Attack" /></div>
@@ -141,7 +150,7 @@
           <ng-template #mapGridContent>
             <div class="maps-grid" [class.inactive-turn]="isInteractionDisabled()">
               <button *ngFor="let map of m.availableMaps; trackBy: trackByMapId" class="map-btn" type="button"
-                [disabled]="!isMyTurn" [class.banned]="isMapBanned(map)" [class.picked]="isMapPicked(map)"
+                [disabled]="!isMyTurn || isCompletedPhase" [class.banned]="isMapBanned(map)" [class.picked]="isMapPicked(map)"
                 [class.decider]="isDecider(map)" (click)="onMapClick(map)" (mouseenter)="onMapHoverEnter($event)"
                 (mouseleave)="onMapHoverLeave($event)">
                 <div class="map-media-wrapper">
