@@ -43,7 +43,8 @@ interface TimelineRow {
   mapName?: string;
   mapImgUrl?: string;
 
-  sideLabel?: string;       // "ATTACK" / "DEFENSE" for SIDE
+  linksSideBelow: boolean;
+  sideConnected: boolean;
 }
 
 @Component({
@@ -65,6 +66,13 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   overlaySubtitle = '';
   overlayClass = ''; // 'banned', 'picked', 'side'
   matchIdCopied = false;
+
+  confirmVisible = false;
+  confirmPrompt = '';
+  confirmOverlayClass = '';
+  confirmBgUrl = '';
+  private pendingMap?: MapInfo;
+  private pendingSideId?: number;
 
   private previousStepIndex = -1;
 
@@ -156,19 +164,128 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   }
 
   onSideClick(sideId: number): void {
-    if (!this.matchId || !this.match) return;
+    if (!this.validateCaptainAction('Only team captains can choose sides')) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.showSideConfirm(sideId);
+  }
+
+  onMapClick(map: MapInfo): void {
+    if (!this.matchId || !this.match) {
+      this.errorMessage = 'Create or join a match first';
+      return;
+    }
+
+    if (this.getCurrentActionType() === 'side') {
+      return;
+    }
+
+    if (!this.validateCaptainAction('Only team captains can make picks/bans')) {
+      return;
+    }
+
+    const action = this.getCurrentActionType();
+    if (!action || action === 'side') {
+      this.errorMessage = 'Match is already completed';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.showMapConfirm(map, action);
+  }
+
+  isMapConfirming(map: MapInfo): boolean {
+    return this.confirmVisible && this.pendingMap?.id === map.id;
+  }
+
+  isSideConfirming(sideId: number): boolean {
+    return this.confirmVisible && this.pendingSideId === sideId;
+  }
+
+  cancelConfirm(event?: Event): void {
+    event?.stopPropagation();
+    this.confirmVisible = false;
+    this.pendingMap = undefined;
+    this.pendingSideId = undefined;
+    this.confirmPrompt = '';
+    this.confirmBgUrl = '';
+    this.confirmOverlayClass = '';
+  }
+
+  confirmAction(event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.pendingMap) {
+      const map = this.pendingMap;
+      this.cancelConfirm();
+      this.submitMapAction(map);
+      return;
+    }
+
+    if (this.pendingSideId !== undefined) {
+      const sideId = this.pendingSideId;
+      this.cancelConfirm();
+      this.submitSideAction(sideId);
+    }
+  }
+
+  private validateCaptainAction(captainError: string): boolean {
+    if (!this.matchId || !this.match) return false;
 
     if (!this.isCurrentUserCaptain()) {
-      this.errorMessage = 'Only team captains can choose sides';
-      return;
+      this.errorMessage = captainError;
+      return false;
     }
 
     if (!this.isCurrentTeamTurn()) {
       this.errorMessage = `It is currently ${this.getCurrentTeamName()}'s turn`;
-      return;
+      return false;
     }
 
-    // Call API with action='side' and mapId=sideId (0=Attack, 1=Defend)
+    return true;
+  }
+
+  private showMapConfirm(map: MapInfo, action: 'ban' | 'pick'): void {
+    this.pendingMap = map;
+    this.pendingSideId = undefined;
+    this.confirmPrompt =
+      action === 'ban'
+        ? `Confirm banning ${map.name}?`
+        : `Confirm picking ${map.name}?`;
+    this.confirmBgUrl = map.mapImgUrl || map.previewUrl || '';
+    this.confirmOverlayClass = action === 'ban' ? 'confirm-ban' : 'confirm-pick';
+    this.confirmVisible = true;
+  }
+
+  private showSideConfirm(sideId: number): void {
+    const sideName = sideId === 0 ? 'ATTACK' : 'DEFENSE';
+    const mapName = this.getCurrentStepMapName();
+    this.pendingSideId = sideId;
+    this.pendingMap = undefined;
+    this.confirmPrompt = mapName
+      ? `Confirm choosing ${sideName} on ${mapName}?`
+      : `Confirm choosing ${sideName}?`;
+
+    const mapId = this.match?.stepMapIds?.[this.match.currentStepIndex];
+    const prevMapId =
+      this.match && this.match.currentStepIndex > 0
+        ? this.match.stepMapIds?.[this.match.currentStepIndex - 1]
+        : undefined;
+    const sideMapId =
+      mapId ||
+      prevMapId ||
+      this.match?.deciderMapId ||
+      0;
+    const sideMap = this.match?.availableMaps.find((m) => m.id === sideMapId);
+    this.confirmBgUrl = sideMap?.mapImgUrl || sideMap?.previewUrl || '';
+    this.confirmOverlayClass =
+      sideId === 0 ? 'confirm-attack' : 'confirm-defense';
+    this.confirmVisible = true;
+  }
+
+  private submitSideAction(sideId: number): void {
     this.loading = true;
     this.matchService
       .applyAction(
@@ -179,10 +296,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
         this.captainToken!
       )
       .subscribe({
-        next: (state) => {
-          this.match = state;
-          this.loading = false;
-        },
+        next: (state) => this.applyActionState(state),
         error: (err) => {
           console.error('Action error:', err);
           this.errorMessage = 'Action rejected by server';
@@ -191,37 +305,11 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
       });
   }
 
-  onMapClick(map: MapInfo): void {
-    if (!this.matchId || !this.match) {
-      this.errorMessage = 'Create or join a match first';
-      return;
-    }
-
-    // If we are in Side Selection, clicking a map should do nothing
-    if (this.getCurrentActionType() === 'side') {
-      console.warn('Cannot pick a map during Side Selection phase.');
-      return;
-    }
-
-    if (!this.isCurrentUserCaptain()) {
-      this.errorMessage = 'Only team captains can make picks/bans';
-      return;
-    }
-
-    if (!this.isCurrentTeamTurn()) {
-      this.errorMessage = `It is currently ${this.getCurrentTeamName()}'s turn`;
-      return;
-    }
-
+  private submitMapAction(map: MapInfo): void {
     const action = this.getCurrentActionType();
-    if (!action) {
-      this.errorMessage = 'Match is already completed';
-      return;
-    }
+    if (!action || action === 'side') return;
 
-    this.errorMessage = '';
     this.loading = true;
-
     this.matchService
       .applyAction(
         this.matchId,
@@ -231,16 +319,30 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
         this.captainToken!
       )
       .subscribe({
-        next: (state) => {
-          this.match = state;
-          this.loading = false;
-        },
+        next: (state) => this.applyActionState(state),
         error: (err) => {
           console.error('Action error:', err);
           this.errorMessage = 'Action rejected by server';
           this.loading = false;
         },
       });
+  }
+
+  private applyActionState(state: MatchState): void {
+    const wasActive = this.match?.phase !== COMPLETED_PHASE_ID;
+
+    if (this.match && state.currentStepIndex > this.match.currentStepIndex) {
+      this.triggerTransitionOverlay(state, this.match.currentStepIndex);
+    }
+
+    this.match = state;
+    this.previousStepIndex = state.currentStepIndex;
+    this.rebuildTimelineRows();
+    this.loading = false;
+
+    if (wasActive && state.phase === COMPLETED_PHASE_ID) {
+      this.onMatchJustCompleted(state);
+    }
   }
 
   // Match Log Helpers
@@ -251,16 +353,31 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     return 'SIDE';
   }
 
-  private rightLabelFor(kind: StepKind): string {
+  private rightLabelFor(
+    kind: StepKind,
+    sideVal?: number,
+    isDone?: boolean
+  ): string {
     if (kind === 'BAN') return 'BAN MAP';
     if (kind === 'PICK') return 'CHOOSE MAP';
+    if (isDone && (sideVal === 0 || sideVal === 1)) {
+      return sideVal === 0 ? 'ATTACK' : 'DEFENSE';
+    }
     return 'CHOOSE SIDE';
   }
 
-  private sideToLabel(v: number | undefined): string | undefined {
-    if (v === 0) return 'ATTACK';
-    if (v === 1) return 'DEFENSE';
-    return undefined;
+  private defenseTeamNameForStep(stepIdx: number): string | undefined {
+    if (!this.match) return undefined;
+
+    const sideVal = this.match.stepSideVals?.[stepIdx];
+    if (sideVal !== 0 && sideVal !== 1) return undefined;
+
+    const pickerTeam = this.match.steps[stepIdx]?.teamIndex;
+    if (pickerTeam !== TEAM_A && pickerTeam !== TEAM_B) return undefined;
+
+    const defTeamIdx =
+      sideVal === 1 ? pickerTeam : pickerTeam === TEAM_A ? TEAM_B : TEAM_A;
+    return this.match.teams[defTeamIdx]?.name;
   }
 
   private pad2(n: number): string {
@@ -284,22 +401,31 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
       const kind = this.actionToKind(s.action);
       const mapId = m.stepMapIds?.[i] ?? 0;
       const sideVal = m.stepSideVals?.[i];
+      const isDone =
+        kind === 'SIDE'
+          ? sideVal === 0 || sideVal === 1
+          : !!mapId;
 
       const map = mapId ? this.getMapById(mapId) : undefined;
+      const nextKind =
+        i + 1 < m.steps.length
+          ? this.actionToKind(m.steps[i + 1].action)
+          : null;
 
       return {
         index: i,
         stepNum: this.pad2(i + 1),
         teamIndex: s.teamIndex,
         kind,
-        rightLabel: this.rightLabelFor(kind),
-        isCurrent: m.currentStepIndex === i,
-        isDone: !!mapId,
+        rightLabel: this.rightLabelFor(kind, sideVal, isDone),
+        isCurrent: m.phase !== COMPLETED_PHASE_ID && m.currentStepIndex === i,
+        isDone,
 
         mapName: map?.name,
         mapImgUrl: map?.mapImgUrl,
 
-        sideLabel: kind === 'SIDE' ? this.sideToLabel(sideVal) : undefined,
+        linksSideBelow: nextKind === 'SIDE',
+        sideConnected: kind === 'SIDE' && i > 0,
       };
     });
   }
@@ -310,6 +436,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   // Check if UI should be disabled if not captain's turn
   isInteractionDisabled(): boolean {
     if (!this.match) return false;
+    if (this.isCompletedPhase) return true;
 
     const isSpectator = this.myTeamIndex !== TEAM_A && this.myTeamIndex !== TEAM_B;
     
@@ -338,6 +465,9 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
     // If I am a spectator, show the actual team name (e.g. "Team A")
     if (this.role === 'spectator' || this.myTeamIndex === null) {
+      if (this.isSidePhase) {
+        return '';
+      }
       return this.getCurrentTeamName();
     }
 
@@ -362,26 +492,39 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  getCurrentStepMapName(): string {
-    if (!this.match) return '';
+  getCurrentSideStepMapId(): number {
+    if (!this.match) return 0;
 
     const currentStepIdx = this.match.currentStepIndex;
     let mapId = this.match.stepMapIds?.[currentStepIdx];
 
-    // If the current step doesn't have a map ID yet (is 0), 
-    // and we are in Side Selection, the map was decided in the PREVIOUS step.
     if (!mapId && this.match.phase === this.SIDE_PHASE_ID && currentStepIdx > 0) {
       mapId = this.match.stepMapIds?.[currentStepIdx - 1];
     }
-    console.log(this.match.deciderMapId);
 
-    // Edge Case: the current step is the decider map side selection
     if (!mapId && this.match.phase === this.SIDE_PHASE_ID && this.match.deciderMapId) {
       mapId = this.match.deciderMapId;
     }
 
+    return mapId ?? 0;
+  }
+
+  getCurrentStepMapName(): string {
+    const mapId = this.getCurrentSideStepMapId();
     if (!mapId) return '';
     return this.getMapNameById(mapId);
+  }
+
+  getDefenseTeamNameForMap(map: MapInfo): string | undefined {
+    if (!this.match?.steps?.length) return undefined;
+
+    for (let i = 0; i < this.match.steps.length; i++) {
+      if (this.match.steps[i].action !== 2) continue;
+      if (this.match.stepMapIds?.[i] !== map.id) continue;
+      return this.defenseTeamNameForStep(i);
+    }
+
+    return undefined;
   }
 
   getCurrentTeamName(): string {
@@ -391,8 +534,13 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   }
 
   getMapNameById(mapId: number): string {
-    if (!this.match || !mapId) return '';
-    const map = this.match.availableMaps.find((m) => m.id === mapId);
+    return this.getMapNameFromState(this.match, mapId);
+  }
+
+  private getMapNameFromState(state: MatchState | undefined, mapId: number): string {
+    if (!state || !mapId) return '';
+    const maps = state.availableMaps ?? this.match?.availableMaps ?? [];
+    const map = maps.find((m) => m.id === mapId);
     return map ? map.name : `Map ${mapId}`;
   }
 
@@ -435,6 +583,21 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
+  goToSummary(): void {
+    this.router.navigate(['/match', this.matchId, 'preview']);
+  }
+
+  private onMatchJustCompleted(_state: MatchState): void {
+    this.matchSocket.disconnect();
+    this.cancelConfirm();
+    this.scheduleSummaryNavigation();
+  }
+
+  private scheduleSummaryNavigation(): void {
+    const delayMs = this.overlayVisible ? 2000 : 0;
+    setTimeout(() => this.goToSummary(), delayMs);
+  }
+
   // Private helpers
 
   private get isBrowser(): boolean {
@@ -449,7 +612,7 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
     if (!mapId) return;
 
-    const mapName = this.getMapNameById(mapId);
+    const mapName = this.getMapNameFromState(newState, mapId);
 
     // Set text/class (same as before)
     if (step.action === 0) {
@@ -498,6 +661,8 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   private subscribeToMatchUpdates(): void {
     this.wsSub = this.matchSocket.matchState$.subscribe((state) => {
       if (state) {
+        const wasActive = this.match?.phase !== COMPLETED_PHASE_ID;
+
         if (this.match && this.previousStepIndex !== -1) {
           if (state.currentStepIndex > this.previousStepIndex) {
             this.triggerTransitionOverlay(state, this.previousStepIndex);
@@ -521,16 +686,15 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
           this.match = state;
         }
         this.previousStepIndex = this.match.currentStepIndex;
+        this.rebuildTimelineRows();
 
-        if (this.match.phase === COMPLETED_PHASE_ID) {
-          // Wait 3 seconds so users see the final "PICKED/BANNED" overlay
-          this.router.navigate(['/match', this.matchId, 'preview']);
-
-          
-          return;
+        if (this.confirmVisible && !this.isMyTurn) {
+          this.cancelConfirm();
         }
 
-        this.rebuildTimelineRows();
+        if (wasActive && this.match.phase === COMPLETED_PHASE_ID) {
+          this.onMatchJustCompleted(this.match);
+        }
       }
     });
   }
@@ -585,13 +749,12 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
   private initMatchWithWebSocket(id: string): void {
     this.matchService.getState(id).subscribe({
       next: (state) => {
-        if (state.phase === COMPLETED_PHASE_ID) {
-          this.router.navigate(['/match', id, 'preview']);
-          return;
-        }
         this.match = state;
+        this.previousStepIndex = state.currentStepIndex;
         this.rebuildTimelineRows();
-        this.matchSocket.connect(id);
+        if (state.phase !== COMPLETED_PHASE_ID) {
+          this.matchSocket.connect(id);
+        }
       },
       error: (err) => {
         console.error('Initial load error', err);
@@ -631,6 +794,10 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
 
   get isSidePhase(): boolean {
     return this.match?.phase === SIDE_PHASE_ID;
+  }
+
+  get isCompletedPhase(): boolean {
+    return this.match?.phase === COMPLETED_PHASE_ID;
   }
 
   get actionColorClass(): string {
