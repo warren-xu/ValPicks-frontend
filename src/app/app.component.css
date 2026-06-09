@@ -78,32 +78,40 @@
   justify-content: center;
   height: 100%;
   padding: 0 24px;
-  
   text-decoration: none;
   font-family: 'Oswald', sans-serif;
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(236, 232, 225, 0.6); /* Dimmed default state */
-  
-  transition: all 0.2s ease;
+  color: rgba(236, 232, 225, 0.6);
   background: transparent;
   border: none;
+  border-top: 4px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease, text-shadow 0.2s ease;
 }
 
-.app-nav a:hover {
+.app-nav a:hover:not(.active) {
   color: #ece8e1;
-  background: rgba(255, 255, 255, 0.05);
+}
+
+.app-nav a.nav-create:hover:not(.active) {
+  border-top-color: #ff4655;
+  text-shadow: 0 0 14px rgba(255, 70, 85, 0.25);
+}
+
+.app-nav a.nav-join:hover:not(.active) {
+  border-top-color: #00ffbc;
+  text-shadow: 0 0 14px rgba(0, 255, 188, 0.25);
 }
 
 /* Active Navigation */
 .app-nav a.active {
   color: #ece8e1;
   background: linear-gradient(to bottom, rgba(236, 232, 225, 0.1), transparent);
+  border-top-color: transparent;
 }
 
-/* The top "light" bar */
 .app-nav a.active::before {
   content: '';
   position: absolute;
@@ -139,7 +147,7 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 12px;
+  padding: 8px;
   text-align: center;
   background: linear-gradient(to top, rgba(15, 25, 35, 0.9), transparent);
   color: #6b7280;

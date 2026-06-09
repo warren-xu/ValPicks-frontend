@@ -9,42 +9,62 @@
   </div>
 
   <div class="state-body">
-    <aside class="log-sidebar">
+    <aside class="log-panel">
+      <div class="log-sidebar">
+      <div class="log-header">
+        <h3>MATCH LOG</h3>
+      </div>
       <div class="log-content">
-        <div *ngFor="let row of timelineRows" class="step-card" [class.current]="row.isCurrent"
-          [class.done]="row.isDone" [class.team-a]="row.teamIndex === 0" [class.team-b]="row.teamIndex === 1">
-          <!-- top -->
-          <div class="step-strip">
-            <div class="strip-left">
-              <span class="step-num">{{ row.stepNum }}</span>
-              <span class="step-team">{{ match?.teams?.[row.teamIndex]?.name }}</span>
+        <ng-container *ngFor="let row of timelineRows; let i = index">
+          <div *ngIf="!row.sideConnected" class="step-card"
+            [class.current]="row.isCurrent || (row.linksSideBelow && timelineRows[i + 1]?.isCurrent)"
+            [class.done]="row.isDone && (!row.linksSideBelow || timelineRows[i + 1]?.isDone)"
+            [class.team-a]="row.teamIndex === 0" [class.team-b]="row.teamIndex === 1"
+            [class.has-side-addon]="row.linksSideBelow">
+            <div class="step-strip">
+              <div class="strip-left">
+                <span class="step-num">{{ row.stepNum }}</span>
+                <span class="step-team">{{ match?.teams?.[row.teamIndex]?.name }}</span>
+              </div>
+
+              <div class="step-right" [class.red]="row.kind === 'BAN'" [class.cyan]="row.kind === 'PICK' || row.kind === 'SIDE'">
+                {{ row.rightLabel }}
+              </div>
             </div>
 
-            <div class="step-right" [class.cyan]="row.teamIndex === 0" [class.red]="row.teamIndex === 1">
-              {{ row.rightLabel }}
-            </div>
-          </div>
+            <div class="step-body" *ngIf="row.kind !== 'SIDE'">
+              <ng-container *ngIf="row.isDone; else pending">
+                <div class="step-map-thumb"
+                  [style.background-image]="row.mapImgUrl ? ('url(' + row.mapImgUrl + ')') : 'none'">
+                  <div class="step-map-overlay"></div>
+                  <div class="step-map-info">
+                    <div class="step-map">{{ row.mapName }}</div>
+                  </div>
+                </div>
+              </ng-container>
 
-          <!-- map -->
-          <div class="step-body" *ngIf="row.kind !== 'SIDE'">
-            <ng-container *ngIf="row.isDone; else pending">
-              <div class="step-map-thumb"
-                [style.background-image]="row.mapImgUrl ? ('url(' + row.mapImgUrl + ')') : 'none'">
-                <div class="step-map-overlay"></div>
-                <div class="step-map-info">
-                  <div class="step-map">{{ row.mapName }}</div>
-                  <div class="step-sub" *ngIf="row.sideLabel">{{ row.sideLabel }}</div>
+              <ng-template #pending>
+                <div class="step-pending">
+                  <span class="step-dots">•••</span>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="step-side-addon" *ngIf="row.linksSideBelow && timelineRows[i + 1] as sideRow">
+              <div class="step-strip" [class.side-active]="sideRow.isCurrent">
+                <div class="strip-left">
+                  <span class="step-num">{{ sideRow.stepNum }}</span>
+                  <span class="step-team">{{ match?.teams?.[sideRow.teamIndex]?.name }}</span>
+                </div>
+
+                <div class="step-right" [class.red]="sideRow.kind === 'BAN'" [class.cyan]="sideRow.kind === 'PICK' || sideRow.kind === 'SIDE'">
+                  {{ sideRow.rightLabel }}
                 </div>
               </div>
-            </ng-container>
-
-            <ng-template #pending>
-              <div class="step-pending">
-                <span class="step-dots">•••</span>
-              </div>
-            </ng-template>
+            </div>
           </div>
-        </div>
+        </ng-container>
+      </div>
       </div>
     </aside>
     <main class="game-interface">
@@ -77,8 +97,7 @@
             <div class="stage-callout">
               <div class="callout-text">
                 <ng-container *ngIf="isCompletedPhase; else activeMatchHeader">
-                  <h2 class="header-title">MATCH COMPLETE</h2>
-                  <p class="completed-subtitle">Review the pick/ban log or view the final summary.</p>
+                  <h2 class="header-title">PICKBAN COMPLETE</h2>
                 </ng-container>
 
                 <ng-template #activeMatchHeader>
@@ -133,50 +152,106 @@
           </header>
 
 
-          <ng-container *ngIf="!isCompletedPhase && isSidePhase; else mapGridContent">
-            <div class="side-selection-container">
-              <button class="side-btn attack" (click)="onSideClick(0)" [disabled]="!isMyTurn">
-                <div class="side-icon"><img src="public/sideimgs/attack-icon.png" alt="Attack" /></div>
-                <span class="side-label">ATTACK</span>
-              </button>
-              <div class="vs-divider">OR</div>
-              <button class="side-btn defense" (click)="onSideClick(1)" [disabled]="!isMyTurn">
-                <div class="side-icon"><img src="public/sideimgs/defense-icon.png" alt="Defense" /></div>
-                <span class="side-label">DEFENSE</span>
-              </button>
-            </div>
-          </ng-container>
-
-          <ng-template #mapGridContent>
-            <div class="maps-grid" [class.inactive-turn]="isInteractionDisabled()">
-              <button *ngFor="let map of m.availableMaps; trackBy: trackByMapId" class="map-btn" type="button"
-                [disabled]="!isMyTurn || isCompletedPhase" [class.banned]="isMapBanned(map)" [class.picked]="isMapPicked(map)"
-                [class.decider]="isDecider(map)" (click)="onMapClick(map)" (mouseenter)="onMapHoverEnter($event)"
-                (mouseleave)="onMapHoverLeave($event)">
-                <div class="map-media-wrapper">
-                  <video class="map-video" *ngIf="map.previewUrl" [src]="map.previewUrl" playsinline loop muted
-                    preload="none" controlslist="nodownload noplaybackrate noremoteplayback">
-                  </video>
-
-                  <div class="map-static-img" *ngIf="map.mapImgUrl"
-                    [style.background-image]="'url(' + map.mapImgUrl + ')'">
-                  </div>
-
-                  <div class="map-overlay">
-                    <div class="map-name">{{ map.name }}</div>
-                    <div class="map-status-pill" [class.decider]="isDecider(map)"
-                      [class.banned]="!isDecider(map) && isMapBanned(map)"
-                      [class.picked]="!isDecider(map) && isMapPicked(map)">
-
-                      {{ (isMapBanned(map) ? 'BANNED' : (isMapPicked(map) ? 'PICKED' : (isDecider(map) ? 'DECIDER' :
-                      'AVAILABLE'))) }}
-
+          <div class="stage-content">
+            <ng-container *ngIf="!isCompletedPhase && isSidePhase; else mapGridContent">
+              <div class="side-selection-container">
+                <div class="side-btn-wrap" [class.confirming]="isSideConfirming(0)">
+                  <button class="side-btn attack" (click)="onSideClick(0)" [disabled]="!isMyTurn || confirmVisible">
+                    <div class="side-icon"><img src="public/sideimgs/attack-icon.png" alt="Attack" /></div>
+                    <span class="side-label">ATTACK</span>
+                  </button>
+                  <div class="confirm-overlay" *ngIf="isSideConfirming(0)">
+                    <div class="confirm-scrim"></div>
+                    <div class="confirm-panel">
+                      <p class="confirm-prompt">{{ confirmPrompt }}</p>
+                      <div class="confirm-actions">
+                        <button type="button" class="confirm-btn cancel" (click)="cancelConfirm($event)" aria-label="Cancel">
+                          ✕
+                        </button>
+                        <button type="button" class="confirm-btn accept" (click)="confirmAction($event)" aria-label="Confirm">
+                          ✓
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </button>
-            </div>
-          </ng-template>
+                <div class="vs-divider">OR</div>
+                <div class="side-btn-wrap" [class.confirming]="isSideConfirming(1)">
+                  <button class="side-btn defense" (click)="onSideClick(1)" [disabled]="!isMyTurn || confirmVisible">
+                    <div class="side-icon"><img src="public/sideimgs/defense-icon.png" alt="Defense" /></div>
+                    <span class="side-label">DEFENSE</span>
+                  </button>
+                  <div class="confirm-overlay" *ngIf="isSideConfirming(1)">
+                    <div class="confirm-scrim"></div>
+                    <div class="confirm-panel">
+                      <p class="confirm-prompt">{{ confirmPrompt }}</p>
+                      <div class="confirm-actions">
+                        <button type="button" class="confirm-btn cancel" (click)="cancelConfirm($event)" aria-label="Cancel">
+                          ✕
+                        </button>
+                        <button type="button" class="confirm-btn accept" (click)="confirmAction($event)" aria-label="Confirm">
+                          ✓
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-template #mapGridContent>
+              <div class="maps-grid" [class.inactive-turn]="isInteractionDisabled()">
+                <div *ngFor="let map of m.availableMaps; trackBy: trackByMapId" class="map-card"
+                  [class.confirming]="isMapConfirming(map)">
+                  <button class="map-btn" type="button"
+                    [disabled]="!isMyTurn || isCompletedPhase || confirmVisible" [class.banned]="isMapBanned(map)" [class.picked]="isMapPicked(map)"
+                    [class.decider]="isDecider(map)" (click)="onMapClick(map)" (mouseenter)="onMapHoverEnter($event)"
+                    (mouseleave)="onMapHoverLeave($event)">
+                    <div class="map-media-wrapper">
+                      <video class="map-video" *ngIf="map.previewUrl" [src]="map.previewUrl" playsinline loop muted
+                        preload="none" controlslist="nodownload noplaybackrate noremoteplayback">
+                      </video>
+
+                      <div class="map-static-img" *ngIf="map.mapImgUrl"
+                        [style.background-image]="'url(' + map.mapImgUrl + ')'">
+                      </div>
+
+                      <div class="map-overlay">
+                        <div class="map-status-pill" [class.decider]="isDecider(map)"
+                          [class.banned]="!isDecider(map) && isMapBanned(map)"
+                          [class.picked]="!isDecider(map) && isMapPicked(map)">
+
+                          {{ (isMapBanned(map) ? 'BANNED' : (isMapPicked(map) ? 'PICKED' : (isDecider(map) ? 'DECIDER' :
+                          'AVAILABLE'))) }}
+
+                        </div>
+                        <div class="map-caption">
+                          <div class="map-def-label" *ngIf="getDefenseTeamNameForMap(map) as defTeam">
+                            DEF {{ defTeam }}
+                          </div>
+                          <div class="map-name">{{ map.name }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                  <div class="confirm-overlay" *ngIf="isMapConfirming(map)">
+                    <div class="confirm-scrim"></div>
+                    <div class="confirm-panel">
+                      <p class="confirm-prompt">{{ confirmPrompt }}</p>
+                      <div class="confirm-actions">
+                        <button type="button" class="confirm-btn cancel" (click)="cancelConfirm($event)" aria-label="Cancel">
+                          ✕
+                        </button>
+                        <button type="button" class="confirm-btn accept" (click)="confirmAction($event)" aria-label="Confirm">
+                          ✓
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-template>
+          </div>
         </section>
 
         <div *ngIf="loading" class="loading">Processing...</div>
