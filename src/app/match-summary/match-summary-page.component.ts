@@ -69,6 +69,10 @@ export class MatchPreviewComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
+  viewMatchLog(): void {
+    this.router.navigate(['/match', this.matchId]);
+  }
+
   // Bo1 Helpers
   getDeciderMapName(): string {
     if (!this.match || !this.match.deciderMapId) return '';
@@ -114,37 +118,45 @@ export class MatchPreviewComponent implements OnInit, OnDestroy {
 
   // Bo3 helpers
 
-  /**
-   * Find who picked the side for a specific map and what they chose
-   */
-  private getSideString(mapId: number): string {
+  private getMapPickerTeamName(mapId: number): string | undefined {
+    if (!this.match) return undefined;
+    const team = this.match.teams.find((t) => t.pickedMapIds.includes(mapId));
+    return team?.name;
+  }
+
+  private getDefendingTeamNameForMap(mapId: number): string {
     if (!this.match || !this.match.steps) return 'TBD';
 
     if (this.match.deciderMapId === mapId) {
-      const pickerIdx = this.match.deciderSidePickerTeam;
+      const picker = this.match.deciderSidePickerTeam;
       const side = this.match.deciderSide;
-      const teamName = this.match.teams[pickerIdx]?.name || 'Unknown';
-      const sideName = side === ATTACK_SIDE_ID ? 'ATK' : 'DEF';
-      return `${teamName} STARTS ON ${sideName}`;
+      if (picker === -1 || side === -1) return 'TBD';
+
+      const other = picker === TEAM_A ? TEAM_B : TEAM_A;
+      return side === DEFEND_SIDE_ID
+        ? this.match.teams[picker].name
+        : this.match.teams[other].name;
     }
 
-    // Find the Step where Action=Side and stepMapIds matches this mapId
-    const stepIndex = this.match.steps.findIndex((s, i) => 
-      s.action === SIDE_ACTION_ID && this.match!.stepMapIds?.[i] === mapId
+    const stepIndex = this.match.steps.findIndex(
+      (s, i) =>
+        s.action === SIDE_ACTION_ID && this.match!.stepMapIds?.[i] === mapId
     );
 
     if (stepIndex !== -1) {
       const step = this.match.steps[stepIndex];
-      const teamName = this.match.teams[step.teamIndex]?.name || 'Unknown';
-      
-      // stepSideVals should exist at the same index
       const sideVal = this.match.stepSideVals?.[stepIndex];
-      const sideName = sideVal === ATTACK_SIDE_ID ? 'ATK' : 'DEF';
+      const pickerIdx = step.teamIndex;
+      const otherIdx = pickerIdx === TEAM_A ? TEAM_B : TEAM_A;
 
-      return `${teamName} STARTS ON ${sideName}`;
+      if (sideVal !== ATTACK_SIDE_ID && sideVal !== DEFEND_SIDE_ID) return 'TBD';
+
+      return sideVal === DEFEND_SIDE_ID
+        ? this.match.teams[pickerIdx].name
+        : this.match.teams[otherIdx].name;
     }
 
-    return 'SIDE INFO MISSING';
+    return 'TBD';
   }
 
   getBo3MapCardsData() {
@@ -160,8 +172,8 @@ export class MatchPreviewComponent implements OnInit, OnDestroy {
         cards.push({
           mapName: map.name,
           imageUrl: getImg(map),
-          infoLabel: 'SIDE SELECTION',
-          infoValue: this.getSideString(map.id),
+          pickLabel: this.getMapPickerTeamName(map.id) ?? 'TBD',
+          defTeam: this.getDefendingTeamNameForMap(map.id),
           accentClass: 'accent-cyan'
         });
       }
@@ -175,8 +187,8 @@ export class MatchPreviewComponent implements OnInit, OnDestroy {
         cards.push({
           mapName: map.name,
           imageUrl: getImg(map),
-          infoLabel: 'SIDE SELECTION',
-          infoValue: this.getSideString(map.id),
+          pickLabel: this.getMapPickerTeamName(map.id) ?? 'TBD',
+          defTeam: this.getDefendingTeamNameForMap(map.id),
           accentClass: 'accent-red'
         });
       }
@@ -190,8 +202,8 @@ export class MatchPreviewComponent implements OnInit, OnDestroy {
         cards.push({
           mapName: map.name,
           imageUrl: getImg(map),
-          infoLabel: 'SIDE SELECTION',
-          infoValue: this.getSideString(mapId),
+          pickLabel: 'DECIDER',
+          defTeam: this.getDefendingTeamNameForMap(mapId),
           accentClass: 'accent-white'
         });
       }

@@ -116,3 +116,192 @@
   background: rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
+
+:host {
+  --val-bg-dark: #0f1923;
+  --val-bg-card: #1c252e;
+  --val-cyan: #00ffbc;
+  --val-red: #ff4655;
+  --val-white: #ece8e1;
+  --val-grey: #768079;
+  --font-header: 'Teko', sans-serif;
+  --font-body: 'Oswald', sans-serif;
+}
+
+
+/* --- INSTRUCTIONS MODAL --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85); /* Dark dim */
+  backdrop-filter: blur(8px);       /* Sleek blur */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-card {
+  width: 90%;
+  max-width: 900px;
+  background: var(--val-bg-card);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  /* Add angular cut corner if desired */
+  clip-path: polygon(
+    0 0, 
+    100% 0, 
+    100% calc(100% - 20px), 
+    calc(100% - 20px) 100%, 
+    0 100%
+  );
+}
+
+/* Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-family: var(--font-header);
+  font-size: 2rem;
+  color: var(--val-white);
+  letter-spacing: 2px;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--val-grey);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.close-btn:hover { color: var(--val-red); }
+
+/* Body - Gallery Layout */
+.modal-body {
+  display: flex;
+  height: 450px;
+}
+
+.tutorial-visual {
+  flex: 1.2; /* Takes slightly more space */
+  background: black;
+  position: relative;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.tutorial-img-placeholder {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  font-family: var(--font-body);
+  transition: background-image 0.4s ease-in-out;
+}
+
+.tutorial-content {
+  flex: 0.8;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.step-title {
+  font-family: var(--font-header);
+  font-size: 3rem;
+  color: var(--val-cyan);
+  margin: 0 0 1rem 0;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.step-desc {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+/* Footer */
+.modal-footer {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Dots */
+.step-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  background: #444;
+  transform: skew(-20deg);
+}
+.dot.active {
+  background: var(--val-red);
+}
+
+/* Buttons */
+.modal-btn {
+  padding: 10px 30px;
+  font-family: var(--font-header);
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.modal-btn.primary {
+  background: var(--val-red);
+  color: white;
+}
+.modal-btn.primary:hover { background: #d42b3a; }
+
+.modal-btn.secondary {
+  background: transparent;
+  color: var(--val-grey);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.modal-btn.secondary:hover:not(:disabled) {
+  border-color: var(--val-white);
+  color: var(--val-white);
+}
+.modal-btn:disabled { opacity: 0.3; cursor: default; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Mobile Tweaks */
+@media (max-width: 900px) {
+  .modal-body { flex-direction: column; height: auto; }
+  .tutorial-visual { height: 200px; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .tutorial-content { padding: 1.5rem; }
+  .step-title { font-size: 2rem; }
+}
