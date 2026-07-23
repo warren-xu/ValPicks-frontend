@@ -699,24 +699,61 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     });
   }
 
+  private findStoredCaptainAuth(matchId: string): CaptainAuthStored | null {
+    if (!this.isBrowser) return null;
+
+    for (const team of [TEAM_A, TEAM_B]) {
+      const storedRaw = localStorage.getItem(
+        `match_${matchId}_team_${team}_auth`
+      );
+      if (!storedRaw) continue;
+
+      try {
+        const parsed: CaptainAuthStored = JSON.parse(storedRaw);
+        if (parsed.role === 'captain' && parsed.token) {
+          return {
+            ...parsed,
+            team: typeof parsed.team === 'number' ? parsed.team : team,
+          };
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  private applyCaptainAuth(parsed: CaptainAuthStored, teamIndex: number): void {
+    this.role = parsed.role ?? 'captain';
+    this.myTeamIndex =
+      typeof parsed.team === 'number' ? parsed.team : teamIndex;
+    this.captainToken = parsed.token ?? null;
+  }
+
   private initializeIdentityFromRoute(
     matchId: string,
     teamParam: string | null
   ): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
     if (teamParam === null) {
+      const stored = this.findStoredCaptainAuth(matchId);
+      if (stored && typeof stored.team === 'number') {
+        this.router.navigate(['/match', matchId, 'team', stored.team], {
+          replaceUrl: true,
+        });
+        return;
+      }
+
       this.setSpectator(matchId);
       return;
     }
 
     const teamIndex = Number(teamParam);
     this.myTeamIndex = isNaN(teamIndex) ? null : teamIndex;
-
-    if (!this.isBrowser) {
-      // SSR fallback
-      this.role = null;
-      this.captainToken = null;
-      return;
-    }
 
     const storedRaw = localStorage.getItem(
       `match_${matchId}_team_${teamParam}_auth`
@@ -728,12 +765,8 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const parsed: CaptainAuthStored = JSON.parse(storedRaw);
-      this.role = parsed.role ?? 'captain';
-      this.myTeamIndex = typeof parsed.team === 'number' ? parsed.team : teamIndex;
-      this.captainToken = parsed.token ?? null;
+      this.applyCaptainAuth(JSON.parse(storedRaw), teamIndex);
     } catch {
-      // If parsing fails, assume captain but without token
       this.role = 'captain';
       this.captainToken = null;
     }
@@ -743,10 +776,21 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
     this.role = 'spectator';
     this.myTeamIndex = null;
     this.captainToken = null;
-    this.router.navigate(['/match', matchId], { replaceUrl: true })
+
+    if (!this.isBrowser) return;
+
+    const url = this.router.url.split('?')[0];
+
+    if (url.includes('/team/')) {
+      this.router.navigate(['/match', matchId], { replaceUrl: true });
+    }
   }
 
   private initMatchWithWebSocket(id: string): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
     this.matchService.getState(id).subscribe({
       next: (state) => {
         this.match = state;
@@ -758,8 +802,8 @@ export class MatchStatePageComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Initial load error', err);
-        this.errorMessage = 'Failed to load match. Redirecting...';
-        this.router.navigate(['/']);
+        this.errorMessage =
+          'Failed to load match. If the server restarted, create or join the match again.';
       },
     });
   }
