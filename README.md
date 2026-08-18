@@ -7,7 +7,10 @@ This project mimics VALORANT Premier and VCT's pick-ban systems. In each match, 
 
 ## Production
 
-This project is currently deployed on GitHub Pages, check it out here: https://warren-xu.github.io/ValPicks-frontend/
+This project is currently deployed on GitHub Pages, check it out here: https://warren-xu.github.io/ValPicks-frontend/.
+
+
+You can find the backend as well at https://github.com/warren-xu/ValPicks-backend/
 
 ## Development server
 
